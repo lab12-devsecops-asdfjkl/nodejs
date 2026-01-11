@@ -1,0 +1,10 @@
+echo "🔍 Auto-fixing linting issues..."
+npm run lint:fix --silent
+
+echo "🔍 Validating code quality..."
+npm run lint
+
+echo "🔐 Running secret detection with gitleaks..."
+
+gitleaks protect --staged --no-banner --verbose 
+echo "✅ Pre-commit checks passed!"
