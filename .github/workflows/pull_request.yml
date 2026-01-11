@@ -2,13 +2,21 @@ name: Node.js PR Pipeline
 
 on:
   pull_request:
-    branches: [ main, develop, staging ]
+    branches:
+      - main
+      - develop
+      - staging
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
 
 jobs:
   sonarqube:
-    runs-on: ubuntu-latest
     name: SonarCloud Code Scan
-    
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,29 +26,29 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: 18
+          cache: npm
           cache-dependency-path: nodejs/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./nodejs
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+        working-directory: nodejs
+        run: npm ci
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=lab12-devsecops-asdfjkl
+            -Dsonar.projectKey=lab12-devsecops-asdfjkl_nodejs
+            -Dsonar.sources=.
 
   build:
-    runs-on: self-hosted
     name: Build Docker Image
-    
+    runs-on: self-hosted
+    needs: sonarqube
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -58,22 +66,23 @@ jobs:
           cache-from: type=registry,ref=registry.gaumeodathanh.me/nodejs-backend:buildcache
           cache-to: type=inline
 
-  trivy-scan:
-    runs-on: self-hosted
+  trivy:
     name: Trivy Image Scan
+    runs-on: self-hosted
     needs: build
-    
+
     steps:
-      - name: Run Trivy vulnerability scanner
+      - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: nodejs-backend:pr-${{ github.event.pull_request.number }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: 1
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: trivy-results.sarif
