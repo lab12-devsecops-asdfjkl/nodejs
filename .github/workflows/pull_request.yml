@@ -38,8 +38,8 @@ jobs:
             -Dsonar.projectKey=lab12-devsecops-asdfjkl_nodejs
             -Dsonar.sources=.
 
-  build:
-    name: Build Docker Image
+  build-and-scan:
+    name: Build Docker Image and Security Scan
     runs-on: self-hosted
     needs: sonarqube
 
@@ -56,16 +56,11 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          load: true
           tags: nodejs-backend:pr-${{ github.event.pull_request.number }}
           cache-from: type=registry,ref=registry.gaumeodathanh.me/nodejs-backend:buildcache
           cache-to: type=inline
 
-  trivy:
-    name: Trivy Image Scan
-    runs-on: self-hosted
-    needs: build
-
-    steps:
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@master
         with:

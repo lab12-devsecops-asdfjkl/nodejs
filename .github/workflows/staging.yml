@@ -6,7 +6,7 @@ on:
 
 jobs:
   sonarqube:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     name: SonarCloud Code Scan
     
     steps:
@@ -36,9 +36,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  build:
+  build-and-scan:
     runs-on: self-hosted
-    name: Build and Push Docker Image
+    name: Build, Push and Security Scan
     
     steps:
       - name: Checkout code
@@ -60,22 +60,17 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
+          load: true
           tags: |
             nodejs-backend:staging
             registry.gaumeodathanh.me/nodejs-backend:staging
           cache-from: type=registry,ref=registry.gaumeodathanh.me/nodejs-backend:buildcache
           cache-to: type=registry,ref=registry.gaumeodathanh.me/nodejs-backend:buildcache,mode=max
 
-  trivy-scan:
-    runs-on: self-hosted
-    name: Trivy Image Scan
-    needs: build
-    
-    steps:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: registry.gaumeodathanh.me/nodejs-backend:staging
+          image-ref: nodejs-backend:staging
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
