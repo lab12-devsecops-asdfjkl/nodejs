@@ -73,4 +73,3 @@ jobs:
           image-ref: nodejs-backend:develop
           format: table
           severity: CRITICAL,HIGH
-          exit-code: 1

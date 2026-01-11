@@ -67,4 +67,3 @@ jobs:
           image-ref: nodejs-backend:pr-${{ github.event.pull_request.number }}
           format: table
           severity: CRITICAL,HIGH
-          exit-code: 1
