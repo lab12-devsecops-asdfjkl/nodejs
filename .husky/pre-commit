@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running code linting..."
+npm run lint
+
+if [ $? -ne 0 ]; then
+  echo "❌ Linting failed. Please fix the errors before committing."
+  exit 1
+fi
+
+echo "🔐 Running secret detection with gitleaks..."
+if ! command -v gitleaks &> /dev/null; then
+  echo "⚠️  gitleaks not found."
+  echo "📝 Please install gitleaks manually:"
+  echo "   On Arch Linux: sudo pacman -S gitleaks"
+  echo "   Or visit: https://github.com/gitleaks/gitleaks/releases"
+  echo ""
+  echo "⏭️  Skipping secret detection for this commit."
+  echo "✅ Pre-commit checks passed (linting only)!"
+  exit 0
+fi
+
+gitleaks detect --source . --no-banner --verbose
+
+if [ $? -ne 0 ]; then
+  echo "❌ Secret detection failed. Please remove any secrets before committing."
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed!"

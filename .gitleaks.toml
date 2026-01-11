@@ -1,0 +1,8 @@
+[allowlist]
+  description = "Global allowlist to skip folders"
+  paths = [
+    '''node_modules/''',
+    '''coverage/''',
+    '''\.test\.js$''',
+    '''\.spec\.js$'''
+  ]
