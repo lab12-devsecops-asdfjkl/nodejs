@@ -26,7 +26,6 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: nodejs
         run: npm ci
 
       - name: SonarCloud Scan
@@ -54,8 +53,8 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./nodejs
-          file: ./nodejs/Dockerfile
+          context: .
+          file: ./Dockerfile
           push: false
           tags: nodejs-backend:pr-${{ github.event.pull_request.number }}
           cache-from: type=registry,ref=registry.gaumeodathanh.me/nodejs-backend:buildcache
