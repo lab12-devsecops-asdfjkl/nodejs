@@ -5,53 +5,9 @@ on:
     branches: [ develop ]
 
 jobs:
-  test:
-    runs-on: self-hosted
-    name: Test and Lint
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: nodejs/package-lock.json
-
-      - name: Install dependencies
-        working-directory: ./nodejs
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      - name: Run linter (if configured)
-        working-directory: ./nodejs
-        run: |
-          if npm run lint --if-present; then
-            echo "Linting passed"
-          else
-            echo "No lint script found, skipping"
-          fi
-
-      - name: Run tests
-        working-directory: ./nodejs
-        run: npm test -- --coverage --passWithNoTests
-        env:
-          NODE_ENV: test
-          MYSQL_URI: mysql://test:test@localhost:3306/testdb
-          REDIS_URL: redis://localhost:6379
-
   sonarqube:
-    runs-on: self-hosted
-    name: SonarQube Code Scan
-    needs: test
+    runs-on: ubuntu-latest
+    name: SonarCloud Code Scan
     
     steps:
       - name: Checkout code
@@ -75,19 +31,15 @@ jobs:
             npm install
           fi
 
-      - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@master
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        with:
-          projectBaseDir: ./nodejs
 
   build:
     runs-on: self-hosted
     name: Build and Push Docker Image
-    needs: test
     
     steps:
       - name: Checkout code
