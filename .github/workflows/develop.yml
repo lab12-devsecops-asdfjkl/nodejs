@@ -67,16 +67,10 @@ jobs:
           cache-from: type=registry,ref=registry.gaumeodathanh.me/nodejs-backend:buildcache
           cache-to: type=registry,ref=registry.gaumeodathanh.me/nodejs-backend:buildcache,mode=max
 
-      - name: Run Trivy vulnerability scanner
+      - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: nodejs-backend:develop
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: 1
