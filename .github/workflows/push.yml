@@ -55,7 +55,7 @@ jobs:
             -d '{
               "ref": "${{ github.ref }}",
               "sha": "${{ github.sha }}",
-              "ci_status": "success",
+              "component": "backend",
               "image": "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
             }' \
             ${{ secrets.JENKINS_URL }}/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_TOKEN }}
