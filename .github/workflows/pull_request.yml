@@ -7,11 +7,6 @@ on:
       - develop
       - staging
 
-permissions:
-  contents: read
-  pull-requests: write
-  security-events: write
-
 jobs:
   sonarqube:
     name: SonarCloud Code Scan
@@ -28,7 +23,7 @@ jobs:
         with:
           node-version: 18
           cache: npm
-          cache-dependency-path: nodejs/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         working-directory: nodejs
