@@ -1,0 +1,62 @@
+name: Node.js Build & Push (Develop)
+
+on:
+  push:
+    branches: [ main, develop, staging ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    name: Build and Push Docker Image
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        shell: bash
+        run: echo "IMAGE_TAG=${GITHUB_REF_NAME}-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Set image name (by environment)
+        shell: bash
+        run: |
+          case "$GITHUB_REF_NAME" in
+            main)    ENV_NAME="prod" ;;
+            develop) ENV_NAME="dev" ;;
+            staging) ENV_NAME="stg" ;;
+            *)       ENV_NAME="$GITHUB_REF_NAME" ;;
+          esac
+          echo "IMAGE_NAME=nodejs-backend-${ENV_NAME}" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASS }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+      
+      - name: Trigger Jenkins deploy
+        if: success()
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{
+              "ref": "${{ github.ref }}",
+              "sha": "${{ github.sha }}",
+              "ci_status": "success",
+              "image": "${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+            }' \
+            ${{ secrets.JENKINS_URL }}/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_TOKEN }}
+

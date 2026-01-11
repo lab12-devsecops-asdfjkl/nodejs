@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const mysql = require('mysql2/promise');
-const redis = require('redis');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 require('dotenv').config();
@@ -17,7 +16,7 @@ const swaggerOptions = {
     info: {
       title: 'Node.js Backend API',
       version: '1.0.0',
-      description: 'API documentation for Node.js Express Backend with MySQL and Redis',
+      description: 'API documentation for Node.js Express Backend with MySQL',
       contact: {
         name: 'API Support'
       }
@@ -71,9 +70,6 @@ const swaggerOptions = {
               properties: {
                 mysql: {
                   type: 'string'
-                },
-                redis: {
-                  type: 'string'
                 }
               }
             },
@@ -110,7 +106,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Database connections
 let mysqlConnection = null;
 let mysqlConnectionStatus = false;
-let redisConnection = false;
 
 // MySQL connection
 // Support both connection string (MYSQL_URI) and individual variables
@@ -154,7 +149,7 @@ if (mysqlConfig) {
   // Test connection and create users table if it doesn't exist
   mysqlConnection.getConnection()
     .then((connection) => {
-      console.log('✅ MySQL connected successfully');
+      console.warn('✅ MySQL connected successfully');
       mysqlConnectionStatus = true;
       connection.release(); // Release the connection back to the pool
 
@@ -170,26 +165,11 @@ if (mysqlConfig) {
       return mysqlConnection.query(createTableQuery);
     })
     .then(() => {
-      console.log('✅ Users table ready');
+      console.warn('✅ Users table ready');
     })
     .catch((err) => {
       console.error('❌ MySQL connection error:', err.message);
       mysqlConnectionStatus = false;
-    });
-}
-
-// Redis connection
-let redisClient = null;
-if (process.env.REDIS_URL) {
-  redisClient = redis.createClient({ url: process.env.REDIS_URL });
-
-  redisClient.connect()
-    .then(() => {
-      console.log('✅ Redis connected successfully');
-      redisConnection = true;
-    })
-    .catch((err) => {
-      console.error('❌ Redis connection error:', err.message);
     });
 }
 
@@ -215,8 +195,7 @@ app.get('/health', (req, res) => {
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     database: {
-      mysql: mysqlConnectionStatus ? 'Connected' : 'Disconnected',
-      redis: redisConnection ? 'Connected' : 'Disconnected'
+      mysql: mysqlConnectionStatus ? 'Connected' : 'Disconnected'
     },
     uptime: process.uptime()
   });
@@ -385,61 +364,8 @@ app.get('/api/mysql/test', async (req, res) => {
   }
 });
 
-// Redis example route
-/**
- * @swagger
- * /api/redis/test:
- *   get:
- *     summary: Test Redis connection
- *     description: Test the Redis connection by setting and getting a test value
- *     tags: [Database]
- *     responses:
- *       200:
- *         description: Redis connection successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Redis connection successful
- *                 testValue:
- *                   type: string
- *                   example: Hello Redis!
- *       503:
- *         description: Redis not connected
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-app.get('/api/redis/test', async (req, res) => {
-  try {
-    if (!redisConnection || !redisClient) {
-      return res.status(503).json({ error: 'Redis not connected' });
-    }
-
-    await redisClient.set('test-key', 'Hello Redis!');
-    const value = await redisClient.get('test-key');
-
-    res.json({
-      message: 'Redis connection successful',
-      testValue: value
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });
@@ -450,7 +376,7 @@ app.use('*', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Node.js server running on port ${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/health`);
-  console.log(`📚 Swagger UI: http://localhost:${PORT}/api-docs`);
+  console.warn(`🚀 Node.js server running on port ${PORT}`);
+  console.warn(`📍 Health check: http://localhost:${PORT}/health`);
+  console.warn(`📚 Swagger UI: http://localhost:${PORT}/api-docs`);
 });
