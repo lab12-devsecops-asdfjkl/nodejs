@@ -32,11 +32,6 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@v2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=lab12-devsecops-asdfjkl
-            -Dsonar.projectKey=lab12-devsecops-asdfjkl_nodejs
-            -Dsonar.sources=.
 
   build-and-scan:
     name: Build Docker Image and Security Scan
@@ -66,4 +61,5 @@ jobs:
         with:
           image-ref: nodejs-backend:pr-${{ github.event.pull_request.number }}
           format: table
-          severity: CRITICAL,HIGH
+          severity: CRITICAL
+          exit-code: 1
